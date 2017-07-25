@@ -21,9 +21,23 @@
     button:hover {
     border: 1px solid;
     }
+    .svg-container {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%; /* aspect ratio */
+    vertical-align: top;
+    overflow: hidden;
+    }
+    .svg-content-responsive {
+    display: inline-block;
+    position: absolute;
+    top: 10px;
+    left: 0;
+}
 </style>
 <head>
-  <title>PHP Test</title>
+  <title>Data Visualization Course: Assignment 1</title>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
       <!-- load the d3.js library -->    
@@ -50,27 +64,58 @@
     <!-- </div> -->
 </header>
 <!-- Page content -->
-<div class="w3-content" style="max-width:1100px">
-    
-    <p>
-      <h2> About the data </h2> 
-
-    </p>
-    
+<div class="w3-content" >
 
     <!-- load data--> 
     <script src="data/declaration.js"></script>
+    <div class="w3-row w3-padding" id="figure_container">
+        <p>
+      <h2> About the data </h2> 
 
-    <div class="w3-row w3-padding" id="figure_container" style="width:1000px;height:600px">
-        <div id="tester" style="width:800px;height:600px; position:relative">
-            <div class="hideshow" id="glob" style="position:absolute; bottom:100px; right:-60px">
+    This data visualization example is based on climate data from the Goddard Institute for Space Studies (GISS). 
+    </p>
+    <p class = 'w3-justify'>
+    In particular, I used a dataset from the <a href="https://data.giss.nasa.gov/gistemp/"> GISS Surface Temperature Analysis (GISTEMP) proyect</a>.
+    The GISTEMP proyect aims at finding an estimate of global temperature change that can be compared with expected global climate change in response to known or suspected climate forcing mechanisms such as atmospheric carbon dioxide, volcanic aerosols, and solar irradiance changes.
+    </p>
+    <p class = 'w3-justify'>
+    The next graph shows Combined Land-Surface Air and Sea-Surface Water Temperature Anomalies from 1880 to 2014. The temperature anomalies are represented by means of the Land-Ocean Temperature Index (LOTI), which to my understanding is a measure of both land and oceanic temperatures over a given area. In this case I have used the subsets of Global, Northern and Southern Hemispheres. 
+    </p>
+    <p class = 'w3-justify'>
+Note: LOTI provides a more realistic representation of the global mean trends than meteorological station data (dTs). it slightly underestimates warming or cooling trends, since the much larger heat capacity of water compared to air causes a slower and diminished reaction to changes; dTs on the other hand overestimates trends, since it disregards most of the dampening effects of the oceans that cover about two thirds of the Earth's surface.
+
+    </p>
+    </div>
+    <div class="w3-row w3-center" id="figure_container" style="width:800px;height:600px; margin-left: 60px">
+        <div class="w3-center" id="tester" style="width:800px;height:600px; position:relative">
+            <div class="toggle" id="toggle_mean" style="position:absolute; bottom:300px; right:20px">
+            <button type="button" class="btn btn-success">
+                Toggle 5 year mean
+                <!-- <script>
+                var svg = d3.select('#toggle_mean')
+                            .append('svg')
+                            .attr('width', 100)
+                            .attr('height', 50)
+                    svg.append('rect')
+                        .attr('width',100)
+                        .attr('height',50)
+                        .attr('x',0)
+                        .attr('y',0)    
+                        .style("opacity", 1)   
+                        .style("stroke", "blue")                        
+                        .style('fill','none')
+                </script> -->
+            </button>
+
+            </div>
+            <div class="hideshow" id="glob" style="position:absolute; bottom:100px; right:-20px">
                 <button id='blue_btn'>
                     <!-- <img src="https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg", id='world_map'> -->
                 <a title="Al MacDonald [2]/ twitter account @F1LT3R [CC BY-SA 3.0 (http://creativecommons.org/licenses/by-sa/3.0)], via Wikimedia Commons" ><img width="220" alt="World map - low resolution" src="https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg" id ="world_fig"/>
                 </a>
                 </button>
             </div>
-            <div class="hideshow" id="n_hem" style="position:absolute; bottom:165px; right:-60px">
+            <div class="hideshow" id="n_hem" style="position:absolute; bottom:165px; right:-20px">
                 <button id='orange_btn'>
                 <script>
                     var svg = d3.select('#orange_btn')
@@ -88,7 +133,7 @@
                 </script>
                 </button>
             </div>
-            <div class="hideshow" id="s_hem" style="position:absolute; bottom:93px; right:-60px">
+            <div class="hideshow" id="s_hem" style="position:absolute; bottom:93px; right:-20px">
                 <button id='green_btn'>
                 <script>
                     var svg = d3.select('#green_btn')
@@ -114,10 +159,12 @@
           <h2> Basic use instructions </h2>  
         
         <ul>
+            <li>Predefined Plotly navigation tools in the upper right corner of the graph</li>
             <li>Click and drag in the canvas to zoom in</li>
             <li>Double click the canvas to zoom out</li>
             <li>Click the elements in the legend to toggle display</li>
-            <li>Double click the elements in the legend to display only one</li>
+            <li>Click on the map sections or double-click the elements in the legend to display only one</li>
+            <li> Toggle mean button shows 5 year running mean of data</li>
         </ul>
         </p>
     </div>
@@ -129,10 +176,30 @@
 </footer>
 
 <script>
+
     function unpack(rows, key) {
      return rows.map(function(row) { return row[key]; });
     }        // Plotly.newPlot('tester',data);
 
+    function moving_mean(x,y){
+        var N = x.length;
+        var someData = [];
+        for (var i = 0; i < N; i++)
+        {
+            someData.push([i,y[i]]);
+        }
+        var moveMean = [0,0];
+        for (var i = 2; i < N-2; i++)
+        {
+            var mean = ( someData[i-2][1] + 
+                         someData[i-1][1] + 
+                         someData[i][1]   + 
+                         someData[i+1][1]+ 
+                         someData[i+2][1])/5.0;
+            moveMean.push(mean);
+        }    
+        return moveMean
+    }
 
     var scopes = ["Glob","NHem","SHem"];
     var names  = ["Global","North Hemisphere","South Hemisphere"];
@@ -140,6 +207,9 @@
     var colors = ['red','blue','green'];
     var widths = [3,1,1];
     var x = unpack(data, 'Year');
+    var y_array = [];
+    var y_array_mean = [];
+    var mean_flag = true;
 
     var new_data = scopes.map(function(scope, i){
         var y = unpack(data, scope);
@@ -159,8 +229,11 @@
                 width: widths[i],
                 color: colors[i]
             },
-            hoverinfo:"x+y+text"
+            hoverinfo:"x+y+text",
+            visible: true
         };
+        y_array[i] = y;
+        y_array_mean[i] = moving_mean(x,y);
         return trace
     });
 
@@ -196,6 +269,23 @@
     
     Plotly.newPlot('tester', new_data, layout, {scrollZoom: false});
     
+    $('.toggle button').click(function(){
+        var btn_id = this.parentNode.id;
+        data = document.getElementById("tester").data
+        if (mean_flag === true){
+            for (var i = data.length - 1; i >= 0; i--) {
+                data[i].y = y_array[i];
+            }
+            mean_flag = false;
+        } else{
+            for (var i = data.length - 1; i >= 0; i--) {
+                data[i].y = y_array_mean[i];
+            };
+            mean_flag = true;
+        };
+        Plotly.redraw('tester')
+    });
+
     $('.hideshow button').click(function(){
         var btn_id = this.parentNode.id;
             //data_index = 0,
@@ -209,23 +299,66 @@
             var data_index = 2;  
         }
         
-        var tester = document.getElementById("tester");
-        var visible = tester.data[data_index].visible;
+        // var tester = document.getElementById("tester");
+        var temp_data = document.getElementById("tester").data;
+        // var trace = temp_data.splice(btn_id,1);
+        
+        // var visible = trace.visible;
+        var visible = document.getElementById("tester")
+                .data[data_index].visible;
+        var visibilities =unpack(document.getElementById("tester").data,'visible');
 
+        
         if( visible === undefined ) {
             Plotly.restyle("tester", 'visible', "legendonly")
             visible = true;
         }
         else if ( visible === true ){
-            //Plotly.restyle("tester", 'visible', true)
-            visible = "legendonly";
+            if(visibilities.indexOf("legendonly") != -1){
+                for (var i = temp_data.length - 1; i >= 0; i--) {
+                    document.getElementById("tester")
+                    .data[i].visible = true;
+                };
+                visible = true;    
+            }
+            else if(visibilities.indexOf("legendonly") === -1){
+            for (var i = temp_data.length - 1; i >= 0; i--) {
+                document.getElementById("tester")
+                .data[i].visible = "legendonly";
+            };
+                visible = true
+            }
+            else{
+                for (var i = temp_data.length - 1; i >= 0; i--) {
+                    document.getElementById("tester")
+                    .data[i].visible = "legendonly";
+                };
+                visible = "true";
+            };
+            
+            //visible = false;
         }
         else if ( visible === "legendonly" ){
-            Plotly.restyle("tester", 'visible', "legendonly")
-            visible = true 
-        }
+            if(visibilities.indexOf("legendonly") === -1){
+            for (var i = temp_data.length - 1; i >= 0; i--) {
+                document.getElementById("tester")
+                .data[i].visible = "legendonly";
+            };
+                visible = true
+            }else{
+                for (var i = temp_data.length - 1; i >= 0; i--) {
+                    document.getElementById("tester")
+                    .data[i].visible = "legendonly";
+                };
+                visible = true 
+            };
+        };
 
-        Plotly.restyle("tester", 'visible', visible, data_index);
+        document.getElementById("tester")
+                .data[data_index].visible = visible;
+
+        //Plotly.restyle("tester", 'visible', visible, data_index);
+        Plotly.restyle("tester", 'visible');
     });
 </script>
 
